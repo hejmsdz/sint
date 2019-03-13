@@ -8,12 +8,18 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) throws Exception {
         int port = 8000;
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/echo", new EchoHandler());
+        server.createContext("/redirect", new RedirectHandler());
+        server.createContext("/cookies", new CookiesHandler());
+        server.createContext("/auth", new AuthHandler());
+        server.createContext("/auth2", new Auth2Handler()).setAuthenticator(new MyAuthenticator());
         server.createContext("/", new RootHandler());
         System.out.println("Starting server on port: " + port);
         server.start();
@@ -34,21 +40,5 @@ public class Main {
             return Files.readAllBytes(Paths.get(path));
         }
     }
-
-    static class EchoHandler implements HttpHandler {
-        public void handle(HttpExchange exchange) throws IOException {
-            byte[] response = headersToJson(exchange.getRequestHeaders());
-            exchange.getResponseHeaders().set("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response);
-            os.close();
-        }
-
-        private byte[] headersToJson(Headers headers) {
-            return JsonWriter.objectToJson(headers).getBytes();
-        }
-    }
-
 }
 
